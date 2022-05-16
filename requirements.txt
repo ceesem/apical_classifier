@@ -7,3 +7,4 @@ cloud-volume>=3.6.0
 pcg_skel
 nglui 
 multiwrapper
+-e git+https://github.com/emjoyce/axon_id.git#egg=axon_id
