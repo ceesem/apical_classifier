@@ -1,0 +1,9 @@
+numpy
+scipy
+pandas
+meshparty>=1.12.0
+caveclient>=4.12.4
+cloud-volume>=3.6.0
+pcg_skel
+nglui 
+multiwrapper
