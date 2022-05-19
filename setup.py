@@ -41,7 +41,7 @@ setuptools.setup(
     include_package_data=True,
     dependency_links=dependency_links,
     url="https://github.com/ceesem/apical_classifier",
-    packages=["src"],
+    packages=["apical_classifier"],
 )
 
 
