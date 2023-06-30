@@ -10,7 +10,7 @@ from .apical_features import (
     generate_apical_features,
 )
 import copy
-from axon_id.models import make_classification_df
+from axon_id.models import class_1_2_axons, find_primary_axon, combine_primary_and_axon_class, add_class_12_primary_anno
 
 def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic_method = True, 
                             m1 = None, m2 = None, remaining_axon = False):
@@ -23,19 +23,24 @@ def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic
         np.append([x[0]], nrn.skeleton.parent_nodes(x)) for x in nrn.skeleton.segments
     ]
 
-    pl = np.array([(nrn.path_length(path) + 1) / 1000 for path in path_inds])
-    num_syn = np.array(
-        [nrn.anno[synapse_table].filter_query(s.to_mesh_mask).count for s in segs]
-    )
+    
+    if heuristic_method:
+        pl = np.array([(nrn.path_length(path) + 1) / 1000 for path in path_inds])
+        num_syn = np.array(
+            [nrn.anno[synapse_table].filter_query(s.to_mesh_mask).count for s in segs]
+        )
+        syn_dens = num_syn / pl
 
     has_root = np.array([nrn.skeleton.root in s for s in segs])
-    syn_dens = num_syn / pl
+    
 
     removed_segs = 1
     total_removed = 0
 
     if heuristic_method == False:
-        segment_classification = np.array(make_classification_df(nrn, m1, m2)['predicted classification rf2'])
+        nrn, seg_ax_map = add_class_12_primary_anno(nrn, m1, m2)
+        # now make seg map True for dendrite and False for axon
+        seg_dend_map = np.array(seg_ax_map)
 
     removed_array = np.array([False]*len(nrn.skeleton.segments))
     while removed_segs > 0:
@@ -50,7 +55,7 @@ def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic
         if heuristic_method:
             remove_segments = np.logical_and(syn_dens <= threshold, valid_segs)
         else:
-            remove_segments = np.logical_and(segment_classification, valid_segs)
+            remove_segments = np.logical_and(seg_dend_map, valid_segs)
             removed_array = removed_array ^ remove_segments
         if remove_segments.sum() > 0:
             mask_array = np.vstack(
