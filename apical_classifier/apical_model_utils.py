@@ -73,7 +73,7 @@ def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic
         total_removed += removed_segs
 
     if remaining_axon:
-        remaining_axon = np.where(((removed_array) == (segment_classification).astype(bool)) == False)
+        remaining_axon = np.where(((removed_array) == (seg_dend_map).astype(bool)) == False)
         return np.array(segs)[remaining_axon[0]]
 
     return total_removed
