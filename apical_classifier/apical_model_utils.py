@@ -158,7 +158,7 @@ def process_apical_features(
     point_features_df = generate_apical_features(nrn)
     return point_features_df
 
-def rf_process_apical_features(nrn, m1, m2):
+def peel_axon_id_apical(nrn, m1, m2):
    '''
    peels axons from neuron with the RF classifiers 
    '''
