@@ -170,7 +170,8 @@ def generate_apical_features(nrn):
                 ],
             }
         )
-        df["tip_pt"] = sk.vertices[df["tip_skind"]].tolist()
+
+        df["tip_pt"] = (sk.vertices[list(map(int, df["tip_skind"]))]).tolist()
         dfs.append(df)
     point_features_df = pd.concat(dfs).reset_index(drop=True)
 
@@ -204,8 +205,8 @@ def generate_apical_features(nrn):
     point_features_df["pt_z"] = point_features_df["pt"].apply(lambda x: x[2] / 1000)
 
     point_features_df["dist_from_tip"] = (
-        sk.distance_to_root[point_features_df["tip_skind"]]
-        - sk.distance_to_root[point_features_df["skind"]]
+        sk.distance_to_root[list(point_features_df["tip_skind"])]
+        - sk.distance_to_root[list(point_features_df["skind"])]
     ) / 1000
 
     point_features_df["soma_x"] = point_features_df["soma_pt"].apply(
@@ -219,7 +220,7 @@ def generate_apical_features(nrn):
     )
 
     point_features_df["dist_to_root"] = (
-        sk.distance_to_root[point_features_df["skind"]] / 1000
+        sk.distance_to_root[list(point_features_df["skind"])] / 1000
     )
     point_features_df["dist_to_root_rel"] = (
         point_features_df["dist_to_root"]
