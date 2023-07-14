@@ -13,7 +13,7 @@ import copy
 from axon_id.models import class_1_2_axons, find_primary_axon, combine_primary_and_axon_class, add_class_12_primary_anno
 
 def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic_method = True, 
-                            m1 = None, m2 = None, remaining_axon = False):
+                            m1 = None, m2 = None, remaining_axon = False, mask_out_ax = True):
     """
     Take all segments, and iteratively remove segments that are both tips and have a low synapse density.
     """
@@ -38,7 +38,7 @@ def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic
     total_removed = 0
 
     if heuristic_method == False:
-        nrn, seg_ax_map = add_class_12_primary_anno(nrn, m1, m2)
+        nrn, seg_ax_map = add_class_12_primary_anno(nrn, m1, m2, mask_out_ax = mask_out_ax)
         # now make seg map True for dendrite and False for axon
         seg_dend_map = np.array(seg_ax_map)
 
@@ -158,12 +158,14 @@ def process_apical_features(
     point_features_df = generate_apical_features(nrn)
     return point_features_df
 
-def peel_axon_id_apical(nrn, m1, m2):
+def peel_axon_id_apical(nrn, m1, m2, mask_out_ax = True):
    '''
    peels axons from neuron with the RF classifiers 
    '''
    # peel axons from neuron
-   remaining_axon = peel_sparse_segments(nrn, m1=m1, m2=m2, heuristic_method = False, remaining_axon = True) 
+   remaining_axon = peel_sparse_segments(nrn, m1=m1, m2=m2, heuristic_method = False, remaining_axon = True, mask_out_ax = mask_out_ax) 
+
+       
    # generate apical features
    point_features_df = generate_apical_features(nrn)
    return point_features_df, remaining_axon
