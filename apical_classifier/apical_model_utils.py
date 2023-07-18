@@ -12,7 +12,7 @@ from .apical_features import (
 import copy
 from axon_id.models import class_1_2_axons, find_primary_axon, combine_primary_and_axon_class, add_class_12_primary_anno
 
-def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic_method = True, 
+def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic_method = False, 
                             m1 = None, m2 = None, remaining_axon = False, mask_out_ax = True):
     """
     Take all segments, and iteratively remove segments that are both tips and have a low synapse density.
@@ -38,7 +38,7 @@ def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic
     total_removed = 0
 
     if heuristic_method == False:
-        nrn, seg_ax_map = add_class_12_primary_anno(nrn, m1, m2, mask_out_ax = mask_out_ax)
+        nrn, seg_ax_map = add_class_12_primary_anno(nrn, m1, m2, mask_out_ax = False)
         # now make seg map True for dendrite and False for axon
         seg_dend_map = np.array(seg_ax_map)
 
@@ -68,7 +68,8 @@ def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic
             )
 
             mask = np.sum(mask_array, axis=0) == 0
-            nrn.apply_mask(mask)
+            if mask_out_ax:
+                nrn.apply_mask(mask)
         removed_segs = sum(remove_segments)
         total_removed += removed_segs
 
