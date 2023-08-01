@@ -23,7 +23,6 @@ def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic
         np.append([x[0]], nrn.skeleton.parent_nodes(x)) for x in nrn.skeleton.segments
     ]
 
-    
     if heuristic_method:
         pl = np.array([(nrn.path_length(path) + 1) / 1000 for path in path_inds])
         num_syn = np.array(
@@ -33,7 +32,6 @@ def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic
 
     has_root = np.array([nrn.skeleton.root in s for s in segs])
     
-
     removed_segs = 1
     total_removed = 0
 
@@ -41,16 +39,15 @@ def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic
         nrn, seg_ax_map = add_class_12_primary_anno(nrn, m1, m2, mask_out_ax = False)
         # now make seg map True for dendrite and False for axon
         seg_dend_map = np.array(seg_ax_map)
-
     removed_array = np.array([False]*len(nrn.skeleton.segments))
     while removed_segs > 0:
+
         has_tip = np.array(
             [
                 np.any(np.isin(sb, nrn.skeleton.end_points.to_skel_index_base))
                 for sb in segs_base
             ]
         )
-
         valid_segs = np.logical_and(has_tip, ~has_root)
         if heuristic_method:
             remove_segments = np.logical_and(syn_dens <= threshold, valid_segs)
@@ -68,14 +65,22 @@ def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic
             )
 
             mask = np.sum(mask_array, axis=0) == 0
-            if mask_out_ax:
-                nrn.apply_mask(mask)
+            nrn.apply_mask(mask)
         removed_segs = sum(remove_segments)
         total_removed += removed_segs
+    
+    if mask_out_ax == False:
+        msk = nrn.mesh_mask
+        nrn.reset_mask()
+        ax_mesh_inds = nrn.mesh_indices[~msk]
+        nrn.add_annotations(name = 'is_axon', data = ax_mesh_inds, overwrite=True, mask = True)
+        # add the ax_mesh as an anno on nrn
+
 
     if remaining_axon:
         remaining_axon = np.where(((removed_array) == (seg_dend_map).astype(bool)) == False)
         return np.array(segs)[remaining_axon[0]]
+
 
     return total_removed
 
