@@ -174,7 +174,7 @@ def generate_apical_features(nrn):
         df["tip_pt"] = (sk.vertices[list(map(int, df["tip_skind"]))]).tolist()
         dfs.append(df)
     # if pt features df is not empty:
-    if point_features_df:
+    if dfs:
         point_features_df = pd.concat(dfs).reset_index(drop=True)
 
         soma_pt = sk.vertices[sk.root]
