@@ -173,62 +173,66 @@ def generate_apical_features(nrn):
 
         df["tip_pt"] = (sk.vertices[list(map(int, df["tip_skind"]))]).tolist()
         dfs.append(df)
-    point_features_df = pd.concat(dfs).reset_index(drop=True)
+    # if pt features df is not empty:
+    if point_features_df:
+        point_features_df = pd.concat(dfs).reset_index(drop=True)
 
-    soma_pt = sk.vertices[sk.root]
-    point_features_df["soma_pt"] = [
-        r for r in np.broadcast_to(soma_pt.reshape(1, 3), (len(point_features_df), 3))
-    ]
-    point_features_df["pt"] = [
-        r for r in sk.vertices[point_features_df["skind"].values]
-    ]
-    point_features_df["top_pt_y"] = np.min(sk.vertices[:, 1]) / 1000
-    point_features_df["bot_pt_y"] = np.max(sk.vertices[:, 1]) / 1000
+        soma_pt = sk.vertices[sk.root]
+        point_features_df["soma_pt"] = [
+            r for r in np.broadcast_to(soma_pt.reshape(1, 3), (len(point_features_df), 3))
+        ]
+        point_features_df["pt"] = [
+            r for r in sk.vertices[point_features_df["skind"].values]
+        ]
+        point_features_df["top_pt_y"] = np.min(sk.vertices[:, 1]) / 1000
+        point_features_df["bot_pt_y"] = np.max(sk.vertices[:, 1]) / 1000
 
-    point_features_df["del_y"] = point_features_df.apply(del_y, axis=1)
-    point_features_df["del_r"] = point_features_df.apply(del_r, axis=1)
-    point_features_df["rho"] = point_features_df.apply(rho, axis=1)
-    point_features_df["theta"] = point_features_df.apply(theta, axis=1)
+        point_features_df["del_y"] = point_features_df.apply(del_y, axis=1)
+        point_features_df["del_r"] = point_features_df.apply(del_r, axis=1)
+        point_features_df["rho"] = point_features_df.apply(rho, axis=1)
+        point_features_df["theta"] = point_features_df.apply(theta, axis=1)
 
-    point_features_df["tip_x"] = point_features_df["tip_pt"].apply(
-        lambda x: x[0] / 1000
-    )
-    point_features_df["tip_y"] = point_features_df["tip_pt"].apply(
-        lambda x: x[1] / 1000
-    )
-    point_features_df["tip_z"] = point_features_df["tip_pt"].apply(
-        lambda x: x[2] / 1000
-    )
+        point_features_df["tip_x"] = point_features_df["tip_pt"].apply(
+            lambda x: x[0] / 1000
+        )
+        point_features_df["tip_y"] = point_features_df["tip_pt"].apply(
+            lambda x: x[1] / 1000
+        )
+        point_features_df["tip_z"] = point_features_df["tip_pt"].apply(
+            lambda x: x[2] / 1000
+        )
 
-    point_features_df["pt_x"] = point_features_df["pt"].apply(lambda x: x[0] / 1000)
-    point_features_df["pt_y"] = point_features_df["pt"].apply(lambda x: x[1] / 1000)
-    point_features_df["pt_z"] = point_features_df["pt"].apply(lambda x: x[2] / 1000)
+        point_features_df["pt_x"] = point_features_df["pt"].apply(lambda x: x[0] / 1000)
+        point_features_df["pt_y"] = point_features_df["pt"].apply(lambda x: x[1] / 1000)
+        point_features_df["pt_z"] = point_features_df["pt"].apply(lambda x: x[2] / 1000)
 
-    point_features_df["dist_from_tip"] = (
-        sk.distance_to_root[list(point_features_df["tip_skind"])]
-        - sk.distance_to_root[list(point_features_df["skind"])]
-    ) / 1000
+        point_features_df["dist_from_tip"] = (
+            sk.distance_to_root[list(point_features_df["tip_skind"])]
+            - sk.distance_to_root[list(point_features_df["skind"])]
+        ) / 1000
 
-    point_features_df["soma_x"] = point_features_df["soma_pt"].apply(
-        lambda x: x[0] / 1000
-    )
-    point_features_df["soma_y"] = point_features_df["soma_pt"].apply(
-        lambda x: x[1] / 1000
-    )
-    point_features_df["soma_z"] = point_features_df["soma_pt"].apply(
-        lambda x: x[2] / 1000
-    )
+        point_features_df["soma_x"] = point_features_df["soma_pt"].apply(
+            lambda x: x[0] / 1000
+        )
+        point_features_df["soma_y"] = point_features_df["soma_pt"].apply(
+            lambda x: x[1] / 1000
+        )
+        point_features_df["soma_z"] = point_features_df["soma_pt"].apply(
+            lambda x: x[2] / 1000
+        )
 
-    point_features_df["dist_to_root"] = (
-        sk.distance_to_root[list(point_features_df["skind"])] / 1000
-    )
-    point_features_df["dist_to_root_rel"] = (
-        point_features_df["dist_to_root"]
-        / point_features_df.query("skind > -1")["dist_to_root"].max()
-    )
-    point_features_df["tort"] = point_features_df.apply(tortuosity, axis=1)
+        point_features_df["dist_to_root"] = (
+            sk.distance_to_root[list(point_features_df["skind"])] / 1000
+        )
+        point_features_df["dist_to_root_rel"] = (
+            point_features_df["dist_to_root"]
+            / point_features_df.query("skind > -1")["dist_to_root"].max()
+        )
+        point_features_df["tort"] = point_features_df.apply(tortuosity, axis=1)
 
-    point_features_df["bp_to_root"] = point_features_df["skind"].apply(
-        lambda x: bp_to_root_factory(x, nrn.skeleton)
-    )
+        point_features_df["bp_to_root"] = point_features_df["skind"].apply(
+            lambda x: bp_to_root_factory(x, nrn.skeleton)
+        )
+    else:
+        point_features_df = pd.DataFrame()
     return point_features_df
