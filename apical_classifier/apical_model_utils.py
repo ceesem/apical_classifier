@@ -274,7 +274,10 @@ def BranchClassifierFactory(rfc, feature_columns):
 
         def fit_predict_data(self, df, base_skind_column, prob_column="apical_prob"):
             self.fit(df, base_skind_column, prob_column)
-            self._data["is_apical"] = self.predict()
+            try:
+                self._data["is_apical"] = self.predict()
+            except:
+                self._data["is_apical"] = []
             return self.data
 
         def preprocess_data(
