@@ -234,5 +234,10 @@ def generate_apical_features(nrn):
             lambda x: bp_to_root_factory(x, nrn.skeleton)
         )
     else:
-        point_features_df = pd.DataFrame()
+        point_features_df = pd.DataFrame(columns = ["root_id", "base_skind", "base_x",
+                "base_y", "base_z", "v_skind_base", "skind", "tip_skind", "soma_pt",
+                "pt", "top_pt_y", "bot_pt_y", "del_y", "del_r", "rho", "theta",
+                "tip_x", "tip_y", "tip_z", "pt_x", "pt_y", "pt_z", "dist_from_tip",
+                "soma_x", "soma_y", "soma_z", "dist_to_root", "dist_to_root_rel",
+                "tort", "bp_to_root"])
     return point_features_df
