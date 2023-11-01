@@ -5,12 +5,10 @@ import numpy as np
 from nglui import parser
 from multiwrapper import multiprocessing_utils as mu
 from .apical_features import (
-    add_axon_annotation,
-    apply_dendrite_mask,
     generate_apical_features,
 )
 import copy
-from axon_id.models import class_1_2_axons, find_primary_axon, combine_primary_and_axon_class, add_class_12_primary_anno
+from axon_id.models import add_class_12_primary_anno
 
 def peel_sparse_segments(nrn, threshold=0.1, synapse_table="post_syn", heuristic_method = False, 
                             m1 = None, m2 = None, remaining_axon = False, mask_out_ax = True):
@@ -154,8 +152,7 @@ def process_apical_features(
     peel_table="post_syn", m1 = None, m2 = None
 ):
     if not preprocessed:
-        #add_axon_annotation(nrn)
-        #nrn = apply_dendrite_mask(nrn)
+
         if peel:
             peel_sparse_segments(
                 nrn, threshold=peel_threshold, synapse_table=peel_table, 
