@@ -24,7 +24,8 @@ def peel_sparse_segments(
     mask_out_ax=True,
 ):
     """
-    Take all segments, and iteratively remove segments that are both tips and have a low synapse density.
+    Take all segments, and iteratively remove segments that are both tips and have a low
+    synapse density.
     """
     segs = copy.deepcopy(nrn.skeleton.segments)
     segs_base = [s.to_skel_index_base for s in segs]
@@ -44,7 +45,7 @@ def peel_sparse_segments(
     removed_segs = 1
     total_removed = 0
 
-    if heuristic_method == False:
+    if not heuristic_method:
         nrn, seg_ax_map = add_class_12_primary_anno(nrn, m1, m2, mask_out_ax=False)
         # now make seg map True for dendrite and False for axon
         seg_dend_map = np.array(seg_ax_map)
@@ -77,7 +78,7 @@ def peel_sparse_segments(
         removed_segs = sum(remove_segments)
         total_removed += removed_segs
 
-    if mask_out_ax == False:
+    if not mask_out_ax:
         msk = nrn.mesh_mask
         nrn.reset_mask()
         ax_mesh_inds = nrn.mesh_indices[~msk]
