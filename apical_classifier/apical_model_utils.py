@@ -1,37 +1,31 @@
 import pcg_skel
 import pandas as pd
 import numpy as np
-import numpy as np
 from nglui import parser
 from multiwrapper import multiprocessing_utils as mu
 from .apical_features import (
-    add_axon_annotation,
-    apply_dendrite_mask,
     generate_apical_features,
 )
 import copy
 
-
-def peel_sparse_segments(nrn, threshold, synapse_table="post_syn"):
+def peel_sparse_segments(nrn, axon_segments, mask_out_ax=True, remaining_axon = False):
     """
     Take all segments, and iteratively remove segments that are both tips and have a low synapse density.
     """
     segs = copy.deepcopy(nrn.skeleton.segments)
     segs_base = [s.to_skel_index_base for s in segs]
-    path_inds = [
-        np.append([x[0]], nrn.skeleton.parent_nodes(x)) for x in nrn.skeleton.segments
-    ]
-
-    pl = np.array([(nrn.path_length(path) + 1) / 1000 for path in path_inds])
-    num_syn = np.array(
-        [nrn.anno[synapse_table].filter_query(s.to_mesh_mask).count for s in segs]
-    )
 
     has_root = np.array([nrn.skeleton.root in s for s in segs])
-    syn_dens = num_syn / pl
 
     removed_segs = 1
     total_removed = 0
+
+    removed_array = np.array([False] * len(nrn.skeleton.segments))
+    is_axon_array = removed_array.copy()
+    is_axon_array[axon_segments] = True
+
+    
+    
     while removed_segs > 0:
         has_tip = np.array(
             [
@@ -39,9 +33,15 @@ def peel_sparse_segments(nrn, threshold, synapse_table="post_syn"):
                 for sb in segs_base
             ]
         )
-
         valid_segs = np.logical_and(has_tip, ~has_root)
-        remove_segments = np.logical_and(syn_dens <= threshold, valid_segs)
+
+
+        # check if valid segs are in axon segments
+        remove_segments = np.logical_and(is_axon_array, valid_segs)
+
+        # remove_segments = np.logical_and(syn_dens <= threshold, valid_segs)
+        # remove_segments = np.logical_or(remove_segments, np.isin(segs_base, axon_segments))
+        removed_array = removed_array ^ remove_segments
         if remove_segments.sum() > 0:
             mask_array = np.vstack(
                 [
@@ -57,7 +57,39 @@ def peel_sparse_segments(nrn, threshold, synapse_table="post_syn"):
         removed_segs = sum(remove_segments)
         total_removed += removed_segs
 
+    if not mask_out_ax:
+        msk = nrn.mesh_mask
+        nrn.reset_mask()
+        ax_mesh_inds = nrn.mesh_indices[~msk]
+        nrn.add_annotations(name='is_axon', data=ax_mesh_inds, overwrite = True, mask = True)
+        nrn.reset_mask()
+
+
+
+    
+
+    if remaining_axon:
+        axon_remaining = np.where(~removed_array)
+        return np.array(segs)[axon_remaining[0]]
+
+
     return total_removed
+
+def heuristic_axon_identification(nrn, threshold=0.1, synapse_table="post_syn"):
+    path_inds = [
+    np.append([x[0]], nrn.skeleton.parent_nodes(x)) for x in nrn.skeleton.segments
+    ]
+    segs = copy.deepcopy(nrn.skeleton.segments)
+    pl = np.array([(nrn.path_length(path) + 1) / 1000 for path in path_inds])
+    num_syn = np.array(
+        [nrn.anno[synapse_table].filter_query(s.to_mesh_mask).count for s in segs]
+    )
+    syn_dens = num_syn / pl
+
+    axon_segments = np.where(syn_dens <= threshold)[0]
+    return axon_segments
+
+
 
 
 def lookup_level2(row, client, radius=500, voxel_resolution=[4, 4, 40]):
@@ -125,17 +157,30 @@ def generate_nrn_df(
 
 
 def process_apical_features(
-    nrn, preprocessed=False, peel_threshold=None, peel_table="post_syn"
+    nrn, preprocessed=False, peel = False, peel_threshold=None, heuristic_method=False, 
+    peel_table="post_syn", m1 = None, m2 = None
 ):
     if not preprocessed:
-        add_axon_annotation(nrn)
-        nrn = apply_dendrite_mask(nrn)
-        if peel_threshold is not None:
+
+        if peel:
             peel_sparse_segments(
-                nrn, threshold=peel_threshold, synapse_table=peel_table
+                nrn, threshold=peel_threshold, synapse_table=peel_table, 
+                heuristic_method=heuristic_method, m1=m1,m2=m2
             )
     point_features_df = generate_apical_features(nrn)
     return point_features_df
+
+def peel_axon_id_apical(nrn, axon_segments, mask_out_ax = True):
+   '''
+   peels axons from neuron with the RF classifiers 
+   '''
+   # peel axons from neuron
+   remaining_axon = peel_sparse_segments(nrn, axon_segments, remaining_axon = True, mask_out_ax = mask_out_ax) 
+
+       
+   # generate apical features
+   point_features_df = generate_apical_features(nrn)
+   return point_features_df, remaining_axon
 
 
 def BranchClassifierFactory(rfc, feature_columns):
@@ -235,7 +280,10 @@ def BranchClassifierFactory(rfc, feature_columns):
 
         def fit_predict_data(self, df, base_skind_column, prob_column="apical_prob"):
             self.fit(df, base_skind_column, prob_column)
-            self._data["is_apical"] = self.predict()
+            try:
+                self._data["is_apical"] = self.predict()
+            except:
+                self._data["is_apical"] = []
             return self.data
 
         def preprocess_data(
